@@ -24,15 +24,19 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: python -m pip install openai
+      - name: Install dependencies
+        run: python -m pip install openai
       - name: Research and/or deliver
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          OPENAI_MODEL: ${{ vars.OPENAI_MODEL || 'gpt-5.5' }}
+          OPENAI_MODEL: ${{ vars.OPENAI_MODEL || 'gpt-5.4-mini' }}
+          DAILY_BRIEF_PROMPT: ${{ secrets.DAILY_BRIEF_PROMPT }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           MODE: ${{ github.event_name == 'schedule' && 'send' || inputs.mode }}
