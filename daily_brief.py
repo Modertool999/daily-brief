@@ -12,7 +12,7 @@ from zoneinfo import ZoneInfo
 from openai import OpenAI
 
 TIMEZONE = ZoneInfo("America/New_York")
-DEFAULT_MODEL = "gpt-5.4-mini"
+DEFAULT_MODEL = "gpt-5.6-luna"
 RESEARCH_TIMEOUT_SECONDS = 40 * 60
 POLL_INTERVAL_SECONDS = 10
 MAX_BRIEF_CHARACTERS = 1200
@@ -37,7 +37,7 @@ def research() -> str:
     response = client.responses.create(
         model=os.getenv("OPENAI_MODEL", DEFAULT_MODEL),
         input=prompt,
-        tools=[{"type": "web_search", "search_context_size": "high"}],
+        tools=[{"type": "web_search", "search_context_size": "medium"}],
         tool_choice="required",
         reasoning={"effort": "medium"},
         background=True,
