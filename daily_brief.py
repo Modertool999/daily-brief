@@ -51,22 +51,7 @@ def research() -> str:
         response = client.responses.retrieve(response.id)
 
     if response.status != "completed":
-        error = response.error
-        details = f"{error.code}: {error.message}" if error else "No API error details provided"
-        # Redact configured secrets if the API includes them in an error message.
-        for name in (
-            "OPENAI_API_KEY",
-            "DAILY_BRIEF_PROMPT",
-            "TELEGRAM_BOT_TOKEN",
-            "TELEGRAM_CHAT_ID",
-        ):
-            secret = os.getenv(name)
-            if secret:
-                details = details.replace(secret, "[redacted]")
-        raise RuntimeError(
-            f"Research ended with status {response.status} "
-            f"(response {response.id}): {details}; no briefing sent"
-        )
+        raise RuntimeError(f"Research ended with status {response.status}; no briefing sent")
 
     message = (response.output_text or "").strip()
     if not message or len(message) > MAX_BRIEF_CHARACTERS:
