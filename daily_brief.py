@@ -51,7 +51,12 @@ def research() -> str:
         response = client.responses.retrieve(response.id)
 
     if response.status != "completed":
-        raise RuntimeError(f"Research ended with status {response.status}; no briefing sent")
+        # Log only the error category, never the API message or response contents.
+        error_code = response.error.code if response.error else "unknown"
+        raise RuntimeError(
+            f"Research ended with status {response.status} "
+            f"(error code: {error_code}); no briefing sent"
+        )
 
     message = (response.output_text or "").strip()
     if not message or len(message) > MAX_BRIEF_CHARACTERS:
