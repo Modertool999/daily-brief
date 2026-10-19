@@ -6,6 +6,6 @@ Add repository **Actions secrets**: `OPENAI_API_KEY`, `TELEGRAM_BOT_TOKEN`, `TEL
 
 Configure the schedule and model in [daily.yml](.github/workflows/daily.yml). Uses **GPT-5.6 Luna**, high reasoning, and uncapped search calls.
 
-For manual runs: **Actions → Daily AI Brief → Run workflow**. Choose `test` (Telegram), `preview` (research only), or `send` (research and deliver).
+For manual runs: choose `test` (Telegram), `preview` (research only), or `send` (research and deliver).
 
 *AI disclosure: Code generated with assistance from GPT-6.1-Sol.*
