@@ -33,6 +33,33 @@ automatic retries, or delivery cache is required. Runs execute one at a time.
 Waiting uses runner minutes, including paid or included minutes for private
 repositories.
 
+## Research settings and cost
+
+The script keeps **GPT-5.6 Luna**, raises reasoning from medium to **high**, and
+uses medium search context with low output verbosity. One request handles the
+whole brief; no background polling or second model pass is needed. The request
+has a 40-minute timeout and automatic API retries are disabled.
+
+Each request allows at most **6 hosted tool calls** and **25,000 output tokens**
+(including internal reasoning). The final briefing must still fit within
+**1,200 characters**. Incomplete or oversized output is rejected rather than sent.
+
+The betting instructions prioritize verified odds, bookmaker and timestamp,
+injuries, implied probability and an evidence-based estimated edge. They allow
+“no bet” when prices or an edge cannot be verified and require rechecking odds
+before betting. Research happens early, so prices and injury news may change
+before delivery. More reasoning does not establish that the estimates are accurate.
+
+At [published OpenAI prices](https://developers.openai.com/api/docs/pricing),
+Luna costs $0.20/million input tokens and $1.20/million output tokens; web search
+costs $0.01/call plus search-content input tokens. Fully using both caps costs
+$0.09 **plus input-token costs** per briefing. For illustration, with 20,000 total
+input tokens and both caps used, that is about $0.094/day or $2.82 per 30 days.
+Actual costs depend on usage; this is not a total spending limit. These settings
+are a cost-conscious starting point, not a measured guarantee of better picks.
+
+[Model documentation](https://developers.openai.com/api/docs/models/gpt-5.6-luna)
+
 ## Manual runs
 
 Use **Actions > Daily AI Brief > Run workflow** and select a mode:

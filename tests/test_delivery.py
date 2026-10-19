@@ -97,5 +97,38 @@ class CommandTests(unittest.TestCase):
         send.assert_called_once()
 
 
+class ResearchTests(unittest.TestCase):
+    def research_result(self, status="completed", message="Briefing"):
+        result = types.SimpleNamespace(status=status, output_text=message)
+        with (
+            patch.dict(os.environ, {"DAILY_BRIEF_PROMPT": "Brief for {DATE}"}),
+            patch.object(brief, "OpenAI") as client,
+        ):
+            client.return_value.responses.create.return_value = result
+            return brief.research()
+
+    def test_complete_briefing(self):
+        self.assertEqual(self.research_result(), "Briefing")
+
+    def test_partial_output_is_rejected(self):
+        with self.assertRaisesRegex(RuntimeError, "Research incomplete"):
+            self.research_result(status="incomplete")
+
+    def test_invalid_message_is_rejected(self):
+        for message in ("", " " * 10, "x" * 1201):
+            with self.subTest(length=len(message)), self.assertRaises(RuntimeError):
+                self.research_result(message=message)
+
+    def test_telegram_error_does_not_expose_token(self):
+        with (
+            patch.dict(os.environ, {"TELEGRAM_BOT_TOKEN": "secret", "TELEGRAM_CHAT_ID": "123"}),
+            patch.object(brief.urllib.request, "urlopen", side_effect=OSError("URL contains secret")),
+        ):
+            with self.assertRaises(RuntimeError) as error:
+                brief.send_telegram("Briefing")
+            self.assertNotIn("secret", str(error.exception))
+            self.assertTrue(error.exception.__suppress_context__)
+
+
 if __name__ == "__main__":
     unittest.main()
