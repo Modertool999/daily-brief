@@ -16,7 +16,7 @@ DEFAULT_MODEL = "gpt-5.6-luna"
 RESEARCH_TIMEOUT_SECONDS = 40 * 60
 POLL_INTERVAL_SECONDS = 10
 MAX_BRIEF_CHARACTERS = 1200
-DELIVERY_TIME = clock_time(11, 0)
+DELIVERY_TIME = clock_time(10, 0)
 
 
 def build_prompt() -> str:
@@ -85,7 +85,7 @@ def send_telegram(message: str) -> None:
 
 
 def wait_until_delivery_time(briefing_date: date) -> None:
-    """Wait for 11 AM Eastern, allowing delayed delivery on the same day."""
+    """Wait for 10 AM Eastern, allowing delayed delivery on the same day."""
     now = datetime.now(TIMEZONE)
     if now.date() != briefing_date:
         raise RuntimeError("Briefing is from a previous day; no briefing sent")
@@ -94,23 +94,18 @@ def wait_until_delivery_time(briefing_date: date) -> None:
     wait_seconds = (target - now).total_seconds()
     if wait_seconds > 0:
         print(
-            f"Research complete; waiting {int(wait_seconds)} seconds until 11 AM ET.",
+            f"Research complete; waiting {int(wait_seconds)} seconds until 10 AM ET.",
             flush=True,
         )
         time.sleep(wait_seconds)
         if datetime.now(TIMEZONE).date() != briefing_date:
             raise RuntimeError("Briefing is from a previous day; no briefing sent")
     else:
-        print("11 AM ET delivery target has passed; delivering now.", flush=True)
+        print("10 AM ET delivery target has passed; delivering now.", flush=True)
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Daily AI briefing to Telegram")
-    parser.add_argument(
-        "--wait-until-delivery",
-        action="store_true",
-        help="wait until 11 AM Eastern before sending (for automated triggers)",
-    )
     parser.add_argument(
         "mode",
         choices=("test", "preview", "send"),
@@ -129,8 +124,8 @@ def main() -> None:
         print("PREVIEW — not sent to Telegram:\n" + message)
         return
 
-    # External scheduler dispatches opt in; manual sends remain immediate.
-    if args.wait_until_delivery or os.getenv("GITHUB_EVENT_NAME") == "schedule":
+    # Scheduled runs wait for the morning target; manual sends are immediate.
+    if os.getenv("GITHUB_EVENT_NAME") == "schedule":
         wait_until_delivery_time(briefing_date)
     send_telegram(message)
     print("Daily briefing delivered via Telegram.")
