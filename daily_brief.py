@@ -3,10 +3,9 @@
 import argparse
 import json
 import os
-import time
 import urllib.parse
 import urllib.request
-from datetime import date, datetime
+from datetime import datetime
 from zoneinfo import ZoneInfo
 
 from openai import OpenAI
@@ -34,7 +33,6 @@ def research() -> str:
         reasoning={"effort": "high"},
         text={"verbosity": "low"},
         max_output_tokens=25000,  # Includes reasoning, not just the short final text.
-        max_tool_calls=6,
     )
     message = (response.output_text or "").strip()
     if response.status != "completed" or not 0 < len(message) <= 1200:
@@ -54,18 +52,6 @@ def send_telegram(message: str) -> None:
         raise RuntimeError("Telegram delivery failed; check bot token and chat ID") from None
 
 
-def wait_until_delivery_time(briefing_date: date) -> None:
-    now = datetime.now(TIMEZONE)
-    if now.date() != briefing_date:
-        raise RuntimeError("Briefing is from a previous day; no briefing sent")
-    seconds = max(0, (now.replace(hour=10, minute=0, second=0, microsecond=0) - now).total_seconds())
-    if seconds:
-        print(f"Research ready; waiting {int(seconds)} seconds until 10 AM ET.", flush=True)
-        time.sleep(seconds)
-        if datetime.now(TIMEZONE).date() != briefing_date:
-            raise RuntimeError("Briefing is from a previous day; no briefing sent")
-
-
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("mode", choices=("test", "preview", "send"))
@@ -78,8 +64,8 @@ def main() -> None:
     if mode == "preview":
         print(message)
         return
-    if os.getenv("GITHUB_EVENT_NAME") == "schedule":
-        wait_until_delivery_time(briefing_date)
+    if datetime.now(TIMEZONE).date() != briefing_date:
+        raise RuntimeError("Briefing is from a previous day; no briefing sent")
     send_telegram(message)
     print("Daily briefing delivered.")
 

@@ -2,7 +2,7 @@ name: Daily AI Brief
 
 on:
   schedule:
-    # Start early to absorb scheduler delays; deliver at 10 AM Eastern.
+    # Start early to absorb scheduler delays; send as soon as research is ready.
     - cron: '7 4 * * *'
       timezone: America/New_York
   workflow_dispatch:
@@ -22,8 +22,8 @@ concurrency:
 jobs:
   briefing:
     runs-on: ubuntu-latest
-    # 4:07 AM to 10 AM fits within the six-hour hosted-runner limit.
-    timeout-minutes: 360
+    # Research has a 40-minute request timeout; allow setup and delivery too.
+    timeout-minutes: 60
     env:
       MODE: ${{ github.event_name == 'schedule' && 'send' || inputs.mode }}
     steps:
