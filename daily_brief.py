@@ -6,7 +6,7 @@ import os
 import time
 import urllib.parse
 import urllib.request
-from datetime import datetime, time as clock_time, timedelta
+from datetime import date, datetime, time as clock_time
 from zoneinfo import ZoneInfo
 
 from openai import OpenAI
@@ -17,7 +17,6 @@ RESEARCH_TIMEOUT_SECONDS = 40 * 60
 POLL_INTERVAL_SECONDS = 10
 MAX_BRIEF_CHARACTERS = 1200
 DELIVERY_TIME = clock_time(11, 0)
-DELIVERY_GRACE_PERIOD = timedelta(hours=1)
 
 
 def build_prompt() -> str:
@@ -85,12 +84,12 @@ def send_telegram(message: str) -> None:
         raise RuntimeError("Telegram did not confirm message delivery")
 
 
-def wait_until_delivery_time() -> None:
-    """Wait for 11 AM Eastern, rejecting deliveries more than an hour late."""
+def wait_until_delivery_time(briefing_date: date) -> None:
+    """Wait for 11 AM Eastern, allowing delayed delivery on the same day."""
     now = datetime.now(TIMEZONE)
+    if now.date() != briefing_date:
+        raise RuntimeError("Briefing is from a previous day; no briefing sent")
     target = datetime.combine(now.date(), DELIVERY_TIME, tzinfo=TIMEZONE)
-    if now > target + DELIVERY_GRACE_PERIOD:
-        raise RuntimeError("Too late to deliver today's briefing")
 
     wait_seconds = (target - now).total_seconds()
     if wait_seconds > 0:
@@ -99,10 +98,19 @@ def wait_until_delivery_time() -> None:
             flush=True,
         )
         time.sleep(wait_seconds)
+        if datetime.now(TIMEZONE).date() != briefing_date:
+            raise RuntimeError("Briefing is from a previous day; no briefing sent")
+    else:
+        print("11 AM ET delivery target has passed; delivering now.", flush=True)
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Daily AI briefing to Telegram")
+    parser.add_argument(
+        "--wait-until-delivery",
+        action="store_true",
+        help="wait until 11 AM Eastern before sending (for automated triggers)",
+    )
     parser.add_argument(
         "mode",
         choices=("test", "preview", "send"),
@@ -115,14 +123,15 @@ def main() -> None:
         print("Telegram test delivered.")
         return
 
+    briefing_date = datetime.now(TIMEZONE).date()
     message = research()
     if args.mode == "preview":
         print("PREVIEW — not sent to Telegram:\n" + message)
         return
 
-    # Only the scheduled workflow waits for the requested 11 AM delivery time.
-    if os.getenv("GITHUB_EVENT_NAME") == "schedule":
-        wait_until_delivery_time()
+    # External scheduler dispatches opt in; manual sends remain immediate.
+    if args.wait_until_delivery or os.getenv("GITHUB_EVENT_NAME") == "schedule":
+        wait_until_delivery_time(briefing_date)
     send_telegram(message)
     print("Daily briefing delivered via Telegram.")
 

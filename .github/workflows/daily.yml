@@ -2,7 +2,8 @@ name: Daily AI Brief
 
 on:
   schedule:
-    - cron: '7 6-11 * * *'
+    # Backup retries; cron-job.org triggers the primary run at 10 AM Eastern.
+    - cron: '7 11-12 * * *'
       timezone: America/New_York
   workflow_dispatch:
     inputs:
@@ -11,6 +12,10 @@ on:
         type: choice
         options: [test, preview, send]
         default: test
+      wait_until_delivery:
+        description: 'Wait until 11 AM Eastern before sending (enable for external scheduler)'
+        type: boolean
+        default: false
 permissions:
   contents: read
 
@@ -21,8 +26,8 @@ concurrency:
 jobs:
   briefing:
     runs-on: ubuntu-latest
-    # An early run may wait almost five hours for the 11 AM delivery target.
-    timeout-minutes: 360
+    # Allows research plus a wait from the primary 10 AM trigger to 11 AM.
+    timeout-minutes: 120
     env:
       MODE: ${{ github.event_name == 'schedule' && 'send' || inputs.mode }}
     steps:
@@ -57,7 +62,12 @@ jobs:
           DAILY_BRIEF_PROMPT: ${{ secrets.DAILY_BRIEF_PROMPT }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: python daily_brief.py "$MODE"
+        run: |
+          args=("$MODE")
+          if [[ '${{ github.event_name }}' == 'schedule' || '${{ inputs.wait_until_delivery }}' == 'true' ]]; then
+            args+=(--wait-until-delivery)
+          fi
+          python daily_brief.py "${args[@]}"
       - name: Record successful delivery
         if: env.MODE == 'send' && steps.delivered.outputs.cache-hit != 'true'
         run: |
